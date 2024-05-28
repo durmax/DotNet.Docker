@@ -1,0 +1,62 @@
+https://learn.microsoft.com/en-us/dotnet/core/docker/build-container?tabs=windows&pivots=dotnet-8-0
+
+1- Create .NET app
+dotnet new console -o App -n DotNet.Docker
+
+2- Publish .NET app
+dotnet publish -c Release
+
+3- Create the Dockerfile
+Create a file named Dockerfile (doesn't have an extension) in the directory containing the .csproj
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+WORKDIR /App
+
+# Copy everything
+COPY . ./
+# Restore as distinct layers
+RUN dotnet restore
+# Build and publish a release
+RUN dotnet publish -c Release -o out
+
+# Build runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /App
+COPY --from=build-env /App/out .
+ENTRYPOINT ["dotnet", "DotNet.Docker.dll"]
+
+4- build the container (Create an image that contain the app) 
+docker build -t counter-image -f Dockerfile .
+
+4.1- to see a list of images installed:
+docker images
+
+4.2- delete image
+docker rmi counter-image:latest
+docker rmi mcr.microsoft.com/dotnet/aspnet:8.0
+
+5- Create a container
+docker create --name core-counter counter-image
+
+5.1- To see a list of all containers, use the command
+docker ps -a
+
+6- Manage the container
+6.1- start the container
+docker start core-counter
+
+6.2- stop  the container
+docker stop core-counter
+
+6.3- Connect to a container
+docker attach --sig-proxy=false core-counter
+
+6.4- Delete a container
+docker rm core-counter
+
+7- Single run
+7.1- docker create and then docker start
+docker run 
+
+7.2- docker create and then docker start, automatically delete the container when the container stops
+docker run -it --rm counter-image
